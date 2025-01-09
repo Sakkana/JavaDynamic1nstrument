@@ -1,0 +1,5 @@
+Premain-Class: org.Ag3nt.Ag3ntMain
+Agent-Class: org.Ag3nt.Ag3ntMain
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Can-Set-Native-Method-Prefix: true
