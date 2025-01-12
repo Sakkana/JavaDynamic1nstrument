@@ -23,6 +23,8 @@ public class HelloWorldClassVisitorAdapter extends ClassVisitor{
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        System.out.println("【HelloWorldClassVisitorAdapter: visitMethod】visiting method " + name);
+
         // obtain the next method, a part of chain invocation
         MethodVisitor methodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
 

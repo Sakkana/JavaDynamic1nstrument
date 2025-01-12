@@ -1,53 +1,39 @@
 package org.Ag3nt;
 
 import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-import java.util.ArrayList;
-
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
-import org.Ag3nt.Ag3ntClassVisitor.HelloWorldClassVisitorAdapter;
+import org.Ag3nt.ASMFramework.JavaASMCoreAPIFrameWork;
+import org.Ag3nt.ASMFramework.JavaASMTreeAPIFrameWork;
 
 public class Ag3ntTransform implements ClassFileTransformer{
-    private ArrayList<String> targetClasses;
+    private String mode;
+    JavaASMCoreAPIFrameWork coreFrameWork;
+    JavaASMTreeAPIFrameWork treeFrameWork;
 
-    Ag3ntTransform () {
-        targetClasses = new ArrayList<String>();
-        targetClasses.add("HelloWorld");
-        targetClasses.add("NotHelloWorld");
+    Ag3ntTransform (String mode) {
+        // mode: Core or Tree or Mix
+        this.mode = new String(mode);
+        if (mode.equals("Tree")) {
+            // Tree API Processing Framework
+            treeFrameWork = new JavaASMTreeAPIFrameWork();
+        } else if (mode.equals("Core")) {
+            // Core API Processing Framework
+            coreFrameWork = new JavaASMCoreAPIFrameWork();
+        } else {
+            System.out.println("Could not be here! System exit.");
+            System.exit(-1);
+        }
     }
 
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
-        if (className.equals(targetClasses.get(0))) {
-            System.out.println("【Ag3ntTransform: transform】Hacking Class:" + className);
-            try {
-                /**
-                 * modify the byte code
-                 */
-
-                // read the class byte code
-                ClassReader classReader = new ClassReader(classfileBuffer);
-
-                // create a writer
-                ClassWriter classWriter = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES);
-
-                // visit the class byte code
-                ClassVisitor helloWorldClassVisitorAdapter = new HelloWorldClassVisitorAdapter(Opcodes.ASM9, classWriter);
-
-                // accept the modification of the class byte code
-                classReader.accept(helloWorldClassVisitorAdapter, ClassReader.EXPAND_FRAMES);
-
-                // return the modified class byte code
-                return classWriter.toByteArray();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        if (mode.equals("Tree")) {
+            // Tree API Processing Framework
+            return treeFrameWork.runTree(loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
+        } else if (mode.equals("Core")) {
+            // Core API Processing Framework
+            return coreFrameWork.runCore(loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
         }
 
-        // no need to modify, return the original byte code
-        return classfileBuffer;
+        return null;
     }
 }

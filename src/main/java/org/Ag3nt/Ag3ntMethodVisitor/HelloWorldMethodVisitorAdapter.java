@@ -9,6 +9,7 @@ public class HelloWorldMethodVisitorAdapter extends MethodVisitor {
 
     public HelloWorldMethodVisitorAdapter(int api, MethodVisitor methodVisitor) {
         super(api, methodVisitor);
+        System.out.println("【MethodVisitor】 init");
     }
 
     /**
@@ -16,6 +17,7 @@ public class HelloWorldMethodVisitorAdapter extends MethodVisitor {
      */
     @Override
     public void visitCode() {
+        System.out.println("【MethodVisitor: visitCode】");
         // insert a statement before the start of method
         methodVisitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         methodVisitor.visitLdcInsn("【💀️ instrumented】visiting class: HelloWorld, method: main");
@@ -44,6 +46,8 @@ public class HelloWorldMethodVisitorAdapter extends MethodVisitor {
      */
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+        System.out.println("【MethodVisitor: visitMethodInsn】" + name + " " + descriptor);
+
         String targetMethodOwner ="java/io/PrintStream";
         String targetMethodName ="println";
         String targetMethodDescriptor ="(Ljava/lang/String;)V";
@@ -72,9 +76,11 @@ public class HelloWorldMethodVisitorAdapter extends MethodVisitor {
      */
     @Override
     public void visitLdcInsn(Object value) {
+        System.out.println("【MethodVisitor: visitLdcInsn】" + value.toString());
         if (value != null && "Hello".equals(value)) {
             methodVisitor.visitLdcInsn(value + " - appendix in visitLdcInsn");
             lastString = (String) value;
+            System.out.println("modifying " + lastString + " to " + value + " - appendix in visitLdcInsn");
             return;
         }
 
@@ -83,6 +89,7 @@ public class HelloWorldMethodVisitorAdapter extends MethodVisitor {
 
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
+        System.out.println("【MethodVisitor: visitNaxs】");
         methodVisitor.visitMaxs(2, 1);
     }
 
