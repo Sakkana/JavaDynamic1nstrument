@@ -21,6 +21,9 @@ public class HelloWorld {
         System.out.println(s + list.get(0));
 
         // test for Tree API
+
+        // original return type: Ag3ntString
+        // after instrument, expected: Ag3ntStringbase
         Object s1 = static_method_m1(1);
         System.out.println(s1);
 
@@ -32,7 +35,7 @@ public class HelloWorld {
     }
 
     public static String static_method_m1(int id) {
-        return "static method m1 - ";
+        return new Ag3ntString(static_final_s1 + " - from Ag3ntString").getString();
     }
 
     private String non_static_method_m2(int id) {

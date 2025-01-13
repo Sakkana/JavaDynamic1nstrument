@@ -58,7 +58,7 @@ public class JavaASMTreeAPIFrameWork {
 
         // get method information
         for (MethodNode mn : classNode.methods) {
-            printMethodInfo(mn);
+            // printMethodInfo(mn);
 
             // find the static method
             if (getAccessFlags(mn.access).contains("static") && mn.name.contains("m1")) {
@@ -79,13 +79,13 @@ public class JavaASMTreeAPIFrameWork {
 
         try {
             byte[] bytes2 = classWriter.toByteArray();
-            File targetFile = new File("./new_class.class");
+            File targetFile = new File("./bytecode/new_class.class");
             FileUtils.writeByteArrayToFile(targetFile, bytes2);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        System.out.println("===== Transform succeed, start executing!✔ =====");
+        System.out.println("===== Transform 【" + className + "】 succeed, start executing!✔ =====");
 
         return classWriter.toByteArray();
     }
@@ -96,17 +96,43 @@ public class JavaASMTreeAPIFrameWork {
             System.out.println(i + ": " + methodNode.instructions.get(i));
         }
 
-        // 清除原有的方法体
+//        // 清除原有的方法体
+//        methodNode.instructions.clear();
+//
+//        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+//        String internalClassName = "com/diy/HelloWorld/utils/Ag3ntStringBase";
+//
+//        try {
+//            // 加载Ag3ntStringBase类，获取对应的Class对象
+//            Class<?> ag3ntStringBaseClass = classLoader.loadClass("com.diy.HelloWorld.utils.Ag3ntStringBase");
+//            // 获取默认构造函数
+//            java.lang.reflect.Constructor<?> constructor = ag3ntStringBaseClass.getConstructor();
+//            // 将无参构造函数对应的字节码方法引用压入操作数栈
+//            methodNode.visitMethodInsn(Opcodes.INVOKESTATIC, internalClassName, "<init>", "()V", false);
+//        } catch (ClassNotFoundException | NoSuchMethodException e) {
+//            e.printStackTrace();
+//        }
+//
+//        // 将新创建的Ag3ntStringBase对象引用返回（注意返回类型的字节码指令要正确匹配）
+//        methodNode.visitInsn(Opcodes.ARETURN);
+//
+//        // 重新计算方法的最大栈深度和局部变量表大小，这里根据实际情况调整了参数
+//        methodNode.visitMaxs(1, 1); // 操作数栈最大深度为1，局部变量表大小为1（因为有一个对象引用在栈上）
+//        methodNode.visitEnd();
+//
+//        // 修改方法签名，将返回类型改为Ag3ntStringBase类型对应的描述符
+//        methodNode.desc = "(I)Lcom/diy/HelloWorld/utils/Ag3ntStringBase;";
+
         methodNode.instructions.clear();
 
-        // 将字符串 "static method m1 - " 加载到操作数栈顶
-        methodNode.visitLdcInsn(" new string - ");
+        // 将字符串 "🍎" 加载到操作数栈顶
+        methodNode.visitLdcInsn("🍎");
 
         // 返回 String 类型的结果
         methodNode.visitInsn(Opcodes.ARETURN);
 
-        // 重新计算方法的最大栈深度和局部变量表大小
-        methodNode.visitMaxs(1, 0); // 操作数栈最大深度为 1，局部变量表大小为 0
+        // 操作数栈最大深度为 1，局部变量表大小为 0
+        methodNode.visitMaxs(1, 0);
         methodNode.visitEnd();
 
         for (int i = 0; i < methodNode.instructions.size(); i++) {
