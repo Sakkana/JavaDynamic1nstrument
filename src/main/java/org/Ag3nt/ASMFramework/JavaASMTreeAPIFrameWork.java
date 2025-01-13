@@ -1,5 +1,6 @@
 package org.Ag3nt.ASMFramework;
 
+import com.sun.source.tree.ReturnTree;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -14,6 +15,7 @@ import java.util.List;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.ClassFileTransformer;
+import java.util.Objects;
 
 import org.Ag3nt.Utils.classFilter;
 
@@ -59,17 +61,13 @@ public class JavaASMTreeAPIFrameWork {
         // get method information
         for (MethodNode mn : classNode.methods) {
             // printMethodInfo(mn);
-
-            // find the static method
-            if (getAccessFlags(mn.access).contains("static") && mn.name.contains("m1")) {
-                // createNewMethod(classNode);
-                modifyStaticMethod(mn);
-                break;
+            if (mn.name.equals("main") && mn.desc.equals("([Ljava/lang/String;)V")) {
+                instrumentMain(mn);
             }
         }
 
         /**
-         * TODO: end modeification
+         * TODO: end modification
          */
 
         // generate new byte code
@@ -79,7 +77,8 @@ public class JavaASMTreeAPIFrameWork {
 
         try {
             byte[] bytes2 = classWriter.toByteArray();
-            File targetFile = new File("./bytecode/new_class.class");
+            File targetFile = new File("./bytecode/" + className + ".class");
+            System.out.println("writing " + targetFile);
             FileUtils.writeByteArrayToFile(targetFile, bytes2);
         } catch (IOException e) {
             e.printStackTrace();
@@ -90,61 +89,146 @@ public class JavaASMTreeAPIFrameWork {
         return classWriter.toByteArray();
     }
 
-    private MethodNode modifyStaticMethod(MethodNode methodNode) {
-        System.out.println(methodNode.instructions);
+    private void instrumentMain(MethodNode methodNode) {
+        System.out.println("I'm " + methodNode.name + " " + methodNode.desc);
+
+
+
+        // 遍历方法中的所有指令
+        for (int i = 0; i < methodNode.instructions.size(); i++) {
+            AbstractInsnNode insn = methodNode.instructions.get(i);
+            if (insn instanceof MethodInsnNode) {
+                MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
+                if (methodInsnNode.getOpcode() == Opcodes.INVOKESTATIC) {
+                    System.out.println("Found static method call: " + methodInsnNode.owner + "." + methodInsnNode.name + methodInsnNode.desc);
+                    // i = Ag3ntinsertBefore(methodNode.instructions, methodInsnNode, i);
+
+                }
+            }
+        }
+    }
+
+    private void modifyIns(MethodInsnNode methodInsnNode) {
+
+    }
+
+    private static int Ag3ntinsertBefore(InsnList instructions, AbstractInsnNode insn, int i) {
+        // 创建打印语句的指令
+        InsnList printInsnList = new InsnList();
+        printInsnList.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
+        printInsnList.add(new LdcInsnNode("👻 Before static method call 👻"));
+        printInsnList.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false));
+
+        // 将打印语句插入到静态方法调用前面
+        instructions.insertBefore(insn, printInsnList);
+
+        return i + 3;   // 回到原来的指令，消除长度增加带来的影响
+    }
+
+    /**
+     * 有 bug，弃用
+     */
+    private MethodNode modifyStaticMethod (MethodNode methodNode){
+        System.out.println(methodNode.name);
         for (int i = 0; i < methodNode.instructions.size(); i++) {
             System.out.println(i + ": " + methodNode.instructions.get(i));
         }
 
-//        // 清除原有的方法体
-//        methodNode.instructions.clear();
-//
-//        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-//        String internalClassName = "com/diy/HelloWorld/utils/Ag3ntStringBase";
-//
-//        try {
-//            // 加载Ag3ntStringBase类，获取对应的Class对象
-//            Class<?> ag3ntStringBaseClass = classLoader.loadClass("com.diy.HelloWorld.utils.Ag3ntStringBase");
-//            // 获取默认构造函数
-//            java.lang.reflect.Constructor<?> constructor = ag3ntStringBaseClass.getConstructor();
-//            // 将无参构造函数对应的字节码方法引用压入操作数栈
-//            methodNode.visitMethodInsn(Opcodes.INVOKESTATIC, internalClassName, "<init>", "()V", false);
-//        } catch (ClassNotFoundException | NoSuchMethodException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // 将新创建的Ag3ntStringBase对象引用返回（注意返回类型的字节码指令要正确匹配）
-//        methodNode.visitInsn(Opcodes.ARETURN);
-//
-//        // 重新计算方法的最大栈深度和局部变量表大小，这里根据实际情况调整了参数
-//        methodNode.visitMaxs(1, 1); // 操作数栈最大深度为1，局部变量表大小为1（因为有一个对象引用在栈上）
-//        methodNode.visitEnd();
-//
-//        // 修改方法签名，将返回类型改为Ag3ntStringBase类型对应的描述符
-//        methodNode.desc = "(I)Lcom/diy/HelloWorld/utils/Ag3ntStringBase;";
+        /**
+         * TODO: modify the method 【return type】 and 【return value】
+         */
 
-        methodNode.instructions.clear();
+        // 1 params (int), return type
+        // System.out.println(methodNode.desc);
+        methodNode.desc = "(I)Lcom/diy/HelloWorld/utils/Ag3ntStringBase;";
 
-        // 将字符串 "🍎" 加载到操作数栈顶
-        methodNode.visitLdcInsn("🍎");
+        // traverse all the instructions
+        for (int i = 0; i < methodNode.instructions.size(); i++) {
+            Object insn = methodNode.instructions.get(i);
+            if (insn instanceof MethodInsnNode) {
+                MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
+                if (methodInsnNode.owner.equals("com/diy/HelloWorld/utils/Ag3ntString")) {
+                    if (methodInsnNode.name.equals("<init>")) {
+                        System.out.println("modifying constructor: " + methodInsnNode.owner + " " + methodInsnNode.name + " " + methodInsnNode.desc);
+                    }
+                    methodInsnNode.owner = "com/diy/HelloWorld/utils/Ag3ntStringBase";
+                }
+            } else if (insn instanceof LdcInsnNode) {
+                Object cst = ((LdcInsnNode) insn).cst;
+                System.out.println("ldc: " + (String) cst);
+                if (cst instanceof String && "com/diy/HelloWorld/utils/Ag3ntString".equals(cst)) {
+                    ((LdcInsnNode) insn).cst = "com/diy/HelloWorld/utils/Ag3ntStringBase";
+                }
+            }
+        }
 
-        // 返回 String 类型的结果
-        methodNode.visitInsn(Opcodes.ARETURN);
+        AbstractInsnNode returnInsn = methodNode.instructions.getLast();
+        if (returnInsn.getOpcode() == Opcodes.ARETURN) {
+            // 在返回指令之前插入检查转换指令
+            System.out.println(returnInsn.getOpcode());
+            // methodNode.instructions.insertBefore(returnInsn, new TypeInsnNode(Opcodes.CHECKCAST, "TargetType"));
+        }
 
-        // 操作数栈最大深度为 1，局部变量表大小为 0
-        methodNode.visitMaxs(1, 0);
         methodNode.visitEnd();
 
-        for (int i = 0; i < methodNode.instructions.size(); i++) {
-            System.out.println(i + ": " + methodNode.instructions.get(i));
-        }
-
-        // 修改方法签名，将返回类型改为 String
-        // methodNode.desc = "(I)Ljava/lang/String;";
         return null;
     }
 
-    private void createNewMethod(ClassNode classNode) {
+    private int calculateMaxStack (InsnList instructions){
+        // 实际的计算逻辑应根据字节码指令进行
+        int maxStack = 0;
+        int currentStack = 0;
+        for (AbstractInsnNode insn : instructions) {
+            int stackChange = getStackChange(insn);
+            currentStack += stackChange;
+            if (currentStack > maxStack) {
+                maxStack = currentStack;
+            }
+        }
+        return maxStack;
+    }
+
+    private int calculateMaxLocals (InsnList instructions){
+        // 实际的计算逻辑应根据字节码指令进行
+        int maxLocals = 0;
+        for (AbstractInsnNode insn : instructions) {
+            int localsChange = getLocalsChange(insn);
+            if (localsChange > maxLocals) {
+                maxLocals = localsChange;
+            }
+        }
+        return maxLocals;
+    }
+
+    private int getStackChange (AbstractInsnNode insn){
+        // 根据不同指令类型返回栈变化量
+        switch (insn.getOpcode()) {
+            case Opcodes.ICONST_1:
+                return 1;
+            case Opcodes.ACONST_NULL:
+                return 1;
+            case Opcodes.INVOKEVIRTUAL:
+                // return -((MethodInsnNode) insn).getArguments().length + 1;
+                // 其他指令根据实际情况添加
+            default:
+                return 0;
+        }
+    }
+
+    private int getLocalsChange (AbstractInsnNode insn){
+        // 根据不同指令类型返回局部变量表变化量，这里简单示例
+        switch (insn.getOpcode()) {
+            case Opcodes.ILOAD:
+                return 1;
+            case Opcodes.ISTORE:
+                return 1;
+            // 其他指令根据实际情况添加
+            default:
+                return 0;
+        }
+    }
+
+    private void createNewMethod (ClassNode classNode){
         MethodNode newMethod = new MethodNode(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "static_method_m0", "(I)I", null, null);
         newMethod.visitCode();
 
@@ -163,7 +247,7 @@ public class JavaASMTreeAPIFrameWork {
         classNode.methods.add(newMethod);
     }
 
-    private void printMethodInfo(MethodNode mn) {
+    private void printMethodInfo (MethodNode mn){
         String methodName = mn.name;
         String methodDescriptor = mn.desc;
         String methodSignature = mn.signature;
@@ -181,14 +265,14 @@ public class JavaASMTreeAPIFrameWork {
 //        }
     }
 
-    private void printClassInfo(ClassNode cn) {
+    private void printClassInfo (ClassNode cn){
         for (MethodNode mn : cn.methods) {
             System.out.println("  Method: " + mn.name + " " + mn.desc);
             System.out.println("  Access Flags: " + getAccessFlags(mn.access));
         }
     }
 
-    private String getAccessFlags(int access) {
+    private String getAccessFlags ( int access){
         StringBuilder sb = new StringBuilder();
         if ((access & Opcodes.ACC_PUBLIC) != 0) sb.append("public ");
         if ((access & Opcodes.ACC_PRIVATE) != 0) sb.append("private ");
@@ -201,5 +285,4 @@ public class JavaASMTreeAPIFrameWork {
         if ((access & Opcodes.ACC_STRICT) != 0) sb.append("strictfp ");
         return sb.toString().trim();
     }
-
 }
