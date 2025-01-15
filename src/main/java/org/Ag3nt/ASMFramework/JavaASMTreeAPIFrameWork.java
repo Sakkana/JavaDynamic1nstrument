@@ -9,6 +9,7 @@ import org.objectweb.asm.Opcodes;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,12 +60,22 @@ public class JavaASMTreeAPIFrameWork {
         // classNode.interfaces.add("org.objectweb.asm.tree.ClassNode"); -> not in class file of HelloWorld (not packaged)
 
         // get method information
+        System.out.println("total method inserted: " + classNode.methods.size());
         for (MethodNode mn : classNode.methods) {
-            // printMethodInfo(mn);
+            // printMethodInfo(mn); {
+            if (mn.name.contains("FromInstrument")) {
+                System.out.println("hacker! 🍺");
+                continue;
+            }
             if (mn.name.equals("main") && mn.desc.equals("([Ljava/lang/String;)V")) {
                 instrumentMain(mn);
+
             }
         }
+
+        insertHackerMethods(classNode);
+
+        System.out.println("🦁️total method inserted: " + classNode.methods.size());
 
         /**
          * TODO: end modification
@@ -78,9 +89,10 @@ public class JavaASMTreeAPIFrameWork {
         try {
             byte[] bytes2 = classWriter.toByteArray();
             File targetFile = new File("./bytecode/" + className + ".class");
-            System.out.println("writing " + targetFile);
+            System.out.println("📖 writing " + targetFile);
             FileUtils.writeByteArrayToFile(targetFile, bytes2);
         } catch (IOException e) {
+            System.out.println(e);
             e.printStackTrace();
         }
 
@@ -89,10 +101,54 @@ public class JavaASMTreeAPIFrameWork {
         return classWriter.toByteArray();
     }
 
+    private void insertHackerMethods(ClassNode classNode) {
+        System.out.println("inserting Hacker Method inside class " + classNode.name);
+        System.out.println("total method inserted: " + classNode.methods.size());
+
+        // 创建新的 MethodNode 来存储 hackerMethod 的信息
+        MethodNode hackerMethod = new MethodNode(
+                Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC,
+                "hackerMethodFromInstrument",
+                "(IILjava/lang/String;)Ljava/lang/String;",
+                null,
+                null
+        );
+
+        /**
+         * 创建指令列表
+         */
+        InsnList instructions = new InsnList();
+
+        // 加载一个新的字符串常量，放到栈上
+        instructions.add(new LdcInsnNode("This is a new string from instrument 🍉"));
+
+        // 加载第一个 int 参数到栈上
+        // instructions.add(new VarInsnNode(Opcodes.ILOAD, 0));
+
+        // 加载第二个 int 参数到栈上
+        // instructions.add(new VarInsnNode(Opcodes.ILOAD, 1));
+
+        // 加载 String 参数到栈上
+        instructions.add(new VarInsnNode(Opcodes.ALOAD, 2));
+
+        instructions.add(new LdcInsnNode("This is a new string from instrument 🍓"));
+
+        // 将指令列表添加到 hackerMethod 中
+        // 返回结果
+        instructions.add(new InsnNode(Opcodes.ARETURN));
+
+        hackerMethod.instructions = instructions;
+
+        // 将 hackerMethod 添加到类的方法列表中
+        // classNode.methods.add(hackerMethod);
+
+        classNode.methods.add(classNode.methods.size() - 1, hackerMethod);
+
+        System.out.println("total method inserted: " + classNode.methods.size());
+    }
+
     private void instrumentMain(MethodNode methodNode) {
         System.out.println("I'm " + methodNode.name + " " + methodNode.desc);
-
-
 
         // 遍历方法中的所有指令
         for (int i = 0; i < methodNode.instructions.size(); i++) {
@@ -101,15 +157,37 @@ public class JavaASMTreeAPIFrameWork {
                 MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
                 if (methodInsnNode.getOpcode() == Opcodes.INVOKESTATIC) {
                     System.out.println("Found static method call: " + methodInsnNode.owner + "." + methodInsnNode.name + methodInsnNode.desc);
+                    i = modifyIns(methodNode.instructions, methodInsnNode, i);
                     // i = Ag3ntinsertBefore(methodNode.instructions, methodInsnNode, i);
-
                 }
             }
         }
     }
 
-    private void modifyIns(MethodInsnNode methodInsnNode) {
+    private int modifyIns(InsnList instructions, MethodInsnNode insn, int idx) {
+        String hookedMethodSignature = "hookedMethodDesc: " + insn.owner + " - " + insn.name + " - " + insn.desc;
+        System.out.println(hookedMethodSignature);
 
+        InsnList newInsnList = new InsnList();
+        // 压栈
+        newInsnList.add(new LdcInsnNode(hookedMethodSignature));
+
+        // 将当前指令替换为 invoke 一个别的函数
+        newInsnList.add(new MethodInsnNode(
+                Opcodes.INVOKESTATIC,
+                "com/diy/HelloWorld/HelloWorld",
+                "hackerMethodFromInstrument",   // "hackerMethod",
+                "(IILjava/lang/String;)Ljava/lang/String;",
+                false
+        ));
+
+        // 添加新的指令
+        instructions.insertBefore(insn, newInsnList);
+
+        // 删除当前指令
+        instructions.remove(insn);
+
+        return idx + 1;
     }
 
     private static int Ag3ntinsertBefore(InsnList instructions, AbstractInsnNode insn, int i) {

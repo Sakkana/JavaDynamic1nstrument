@@ -24,8 +24,8 @@ public class HelloWorld {
 
         // original return type: Ag3ntString
         // after instrument, expected: Ag3ntStringbase
-        Ag3ntString s1 = static_method_m1(1);
-        System.out.println(s1.getString());
+        String s1 = static_method_m1(1, 2);
+        System.out.println(s1);
 
         HelloWorld clazz = new HelloWorld();
         String s2 = clazz.non_static_method_m2(2);
@@ -34,9 +34,12 @@ public class HelloWorld {
         clazz.test();
     }
 
-    public static Ag3ntString static_method_m1(int id) {
-        Ag3ntString ag3ntString = new Ag3ntString(static_final_s1 + " - from Ag3ntString");
-        return ag3ntString;
+    public static String static_method_m1(int id, int di) {
+        return "return from static_method_m1";
+    }
+
+    public static String hackerMethod(int id, int di, String s) {
+        return s + " , " + id + " ," + di;
     }
 
     private String non_static_method_m2(int id) {
