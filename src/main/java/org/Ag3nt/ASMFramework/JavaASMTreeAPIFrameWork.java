@@ -1,6 +1,6 @@
 package org.Ag3nt.ASMFramework;
 
-import com.sun.source.tree.ReturnTree;
+import org.Ag3nt.Utils.APIConsumerGenerator;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -9,14 +9,8 @@ import org.objectweb.asm.Opcodes;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
-import java.util.List;
-
-import java.lang.instrument.Instrumentation;
-import java.lang.instrument.ClassFileTransformer;
-import java.util.Objects;
 
 import org.Ag3nt.Utils.classFilter;
 
@@ -159,10 +153,18 @@ public class JavaASMTreeAPIFrameWork {
         String hookedMethodSignature = "hookedMethodDesc: " + insn.owner + " - " + insn.name + " - " + insn.desc;
         System.out.println("hookedMethodSignature: " + hookedMethodSignature);
         System.out.println(instructions.size());
+
+        int original_length = instructions.size();
+
         InsnList newInsnList = new InsnList();
 
         // pop 两个 int
-        newInsnList.add(new InsnNode(Opcodes.POP2));
+        // newInsnList.add(new InsnNode(Opcodes.POP2));
+
+        // 将 pop 替换成 cosume 系列
+        newInsnList.add(APIConsumerGenerator.consumeBasicIntInstGen());
+
+        newInsnList.add(APIConsumerGenerator.consumeBasicIntInstGen());
 
         // 压栈
         newInsnList.add(new LdcInsnNode(hookedMethodSignature));
@@ -182,10 +184,9 @@ public class JavaASMTreeAPIFrameWork {
         // 删除当前指令
         instructions.remove(insn);
 
-        System.out.println(instructions.size());
-        // System.exit(0);
+        int final_length = instructions.size();
 
-        return idx + 2;
+        return idx + final_length - original_length;
     }
 
     private static int Ag3ntinsertBefore(InsnList instructions, AbstractInsnNode insn, int i) {

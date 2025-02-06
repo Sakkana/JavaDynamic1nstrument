@@ -1,7 +1,6 @@
 package org.Ag3nt.Utils;
 
-public class APIManager {
-
+public class APIConsumer {
 
     // 消费基本数据类型的方法
 
