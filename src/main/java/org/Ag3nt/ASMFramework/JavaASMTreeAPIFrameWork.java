@@ -142,7 +142,12 @@ public class JavaASMTreeAPIFrameWork {
                 MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
                 if (methodInsnNode.getOpcode() == Opcodes.INVOKESTATIC) {
                     System.out.println("Found static method call: " + methodInsnNode.owner + "." + methodInsnNode.name + methodInsnNode.desc);
-                    i = modifyIns(methodNode.instructions, methodInsnNode, i);
+                    // System.out.println("parsed params types: ");
+                    // APIConsumerGenerator.paramsConsumeInstSeriesGenV0(methodInsnNode.desc);
+                    if (methodInsnNode.name.contains("m1")) {
+                        i = modifyIns(methodNode.instructions, methodInsnNode, i);
+                    }
+
                     // i = Ag3ntinsertBefore(methodNode.instructions, methodInsnNode, i);
                 }
             }
@@ -158,13 +163,19 @@ public class JavaASMTreeAPIFrameWork {
 
         InsnList newInsnList = new InsnList();
 
-        // pop 两个 int
+        // v1: pop 两个 int
         // newInsnList.add(new InsnNode(Opcodes.POP2));
 
-        // 将 pop 替换成 cosume 系列
-        newInsnList.add(APIConsumerGenerator.consumeBasicIntInstGen());
+        // v2: 将 pop 替换成 cosume 系列
+        // newInsnList.add(APIConsumerGenerator.consumeBasicIntInstGen());
 
-        newInsnList.add(APIConsumerGenerator.consumeBasicIntInstGen());
+        // newInsnList.add(APIConsumerGenerator.consumeBasicIntInstGen());
+
+        // v3: 根据 descriptor 来判断需要生成的参数消耗 API 序列
+        // newInsnList.add(APIConsumerGenerator.paramsConsumeInstSeriesGenMock(insn.desc));
+
+        // v4: 自动化路由
+        newInsnList.add(APIConsumerGenerator.paramsConsumeInstSeriesGenV0(insn.desc));
 
         // 压栈
         newInsnList.add(new LdcInsnNode(hookedMethodSignature));
@@ -190,6 +201,8 @@ public class JavaASMTreeAPIFrameWork {
     }
 
     private static int Ag3ntinsertBefore(InsnList instructions, AbstractInsnNode insn, int i) {
+        int original_length = instructions.size();
+
         // 创建打印语句的指令
         InsnList printInsnList = new InsnList();
         printInsnList.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
@@ -199,7 +212,9 @@ public class JavaASMTreeAPIFrameWork {
         // 将打印语句插入到静态方法调用前面
         instructions.insertBefore(insn, printInsnList);
 
-        return i + 3;   // 回到原来的指令，消除长度增加带来的影响
+        int final_length = instructions.size();
+
+        return i + final_length - original_length;   // 回到原来的指令，消除长度增加带来的影响
     }
 
     /**
