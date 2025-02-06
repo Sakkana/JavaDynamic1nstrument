@@ -69,13 +69,13 @@ public class JavaASMTreeAPIFrameWork {
             }
             if (mn.name.equals("main") && mn.desc.equals("([Ljava/lang/String;)V")) {
                 instrumentMain(mn);
-
             }
         }
 
         insertHackerMethods(classNode);
 
         System.out.println("🦁️total method inserted: " + classNode.methods.size());
+
 
         /**
          * TODO: end modification
@@ -109,7 +109,7 @@ public class JavaASMTreeAPIFrameWork {
         MethodNode hackerMethod = new MethodNode(
                 Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC,
                 "hackerMethodFromInstrument",
-                "(IILjava/lang/String;)Ljava/lang/String;",
+                "(Ljava/lang/String;)Ljava/lang/String;",     // 控制生成的方法签名参数
                 null,
                 null
         );
@@ -119,19 +119,10 @@ public class JavaASMTreeAPIFrameWork {
          */
         InsnList instructions = new InsnList();
 
-        // 加载一个新的字符串常量，放到栈上
-        instructions.add(new LdcInsnNode("This is a new string from instrument 🍉"));
-
-        // 加载第一个 int 参数到栈上
-        // instructions.add(new VarInsnNode(Opcodes.ILOAD, 0));
-
-        // 加载第二个 int 参数到栈上
-        // instructions.add(new VarInsnNode(Opcodes.ILOAD, 1));
-
         // 加载 String 参数到栈上
-        instructions.add(new VarInsnNode(Opcodes.ALOAD, 2));
+        instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
 
-        instructions.add(new LdcInsnNode("This is a new string from instrument 🍓"));
+        // instructions.add(new LdcInsnNode("This is a new string from instrument 🍓"));
 
         // 将指令列表添加到 hackerMethod 中
         // 返回结果
@@ -166,9 +157,13 @@ public class JavaASMTreeAPIFrameWork {
 
     private int modifyIns(InsnList instructions, MethodInsnNode insn, int idx) {
         String hookedMethodSignature = "hookedMethodDesc: " + insn.owner + " - " + insn.name + " - " + insn.desc;
-        System.out.println(hookedMethodSignature);
-
+        System.out.println("hookedMethodSignature: " + hookedMethodSignature);
+        System.out.println(instructions.size());
         InsnList newInsnList = new InsnList();
+
+        // pop 两个 int
+        newInsnList.add(new InsnNode(Opcodes.POP2));
+
         // 压栈
         newInsnList.add(new LdcInsnNode(hookedMethodSignature));
 
@@ -177,7 +172,7 @@ public class JavaASMTreeAPIFrameWork {
                 Opcodes.INVOKESTATIC,
                 "com/diy/HelloWorld/HelloWorld",
                 "hackerMethodFromInstrument",   // "hackerMethod",
-                "(IILjava/lang/String;)Ljava/lang/String;",
+                "(Ljava/lang/String;)Ljava/lang/String;",
                 false
         ));
 
@@ -187,7 +182,10 @@ public class JavaASMTreeAPIFrameWork {
         // 删除当前指令
         instructions.remove(insn);
 
-        return idx + 1;
+        System.out.println(instructions.size());
+        // System.exit(0);
+
+        return idx + 2;
     }
 
     private static int Ag3ntinsertBefore(InsnList instructions, AbstractInsnNode insn, int i) {

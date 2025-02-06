@@ -38,9 +38,9 @@ public class HelloWorld {
         return "return from static_method_m1";
     }
 
-    public static String hackerMethod(int id, int di, String s) {
-        return s + " , " + id + " ," + di;
-    }
+//    public static String hackerMethod(int id, int di, String s) {
+//        return s + " , " + id + " ," + di;
+//    }
 
     private String non_static_method_m2(int id) {
         return "non-static method m2 - " + id;
